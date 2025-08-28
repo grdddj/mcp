@@ -48,6 +48,13 @@ uv pip install -e .
 uv run main.py
 ```
 
+5. Debug the MCP server
+
+```bash
+uv run mcp dev mcp_server.py
+# Opens a browser with the MCP server UI
+```
+
 #### Option 2: Setup without uv
 
 1. Create and activate a virtual environment:
