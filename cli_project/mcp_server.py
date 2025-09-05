@@ -1,6 +1,13 @@
 from pydantic import Field
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.prompts import base
+from dotenv import load_dotenv
+import os
+import requests
+
+
+load_dotenv()
+
 
 mcp = FastMCP("DocumentMCP", log_level="ERROR")
 
@@ -41,6 +48,32 @@ def edit_doc_contents(
     if doc_id not in docs:
         raise ValueError(f"Document with ID {doc_id} not found.")
     docs[doc_id] = docs[doc_id].replace(old_str, new_str)
+
+
+@mcp.tool(
+    name="send_me_notification",
+    description="Send me a notification about something.",
+)
+def send_me_notification(
+    title: str = Field(description="The title of the notification."),
+    message: str = Field(description="The message of the notification."),
+) -> None:
+    PUSHBULLET_TOKEN = os.getenv("PUSHBULLET_TOKEN", "")
+    PUSHBULLET_URL = "https://api.pushbullet.com/v2/pushes"
+
+    if not PUSHBULLET_TOKEN:
+        raise RuntimeError("PUSHBULLET_TOKEN is not set in environment variables.")
+
+    headers = {
+        "Access-Token": PUSHBULLET_TOKEN,
+        "Content-Type": "application/json",
+    }
+    data = {"type": "note", "title": title, "body": message}
+    response = requests.post(PUSHBULLET_URL, json=data, headers=headers)
+    if response.status_code != 200:
+        raise RuntimeError(
+            f"Failed to send notification: {response.status_code} {response.text}"
+        )
 
 
 @mcp.resource("docs://documents", mime_type="application/json")
