@@ -1,5 +1,5 @@
 from pydantic import Field
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 from mcp.server.fastmcp.prompts import base
 from dotenv import load_dotenv
 import os
@@ -9,7 +9,7 @@ import requests
 load_dotenv()
 
 
-mcp = FastMCP("DocumentMCP", log_level="ERROR")
+mcp = FastMCP("DocumentMCP", log_level="INFO")
 
 
 docs = {
@@ -133,4 +133,5 @@ def summarize_document(
 
 
 if __name__ == "__main__":
-    mcp.run(transport="stdio")
+    # mcp.run(transport="stdio")
+    mcp.run(transport="http", host="127.0.0.1", port=6277, path="/mcp")
