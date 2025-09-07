@@ -4,7 +4,7 @@ CLI interface for the Claude API tool
 
 import argparse
 import sys
-from claude_api import chat_with_claude, get_default_model
+from claude_api import chat_with_claude, chat_with_conversation, get_default_model, ConversationManager
 
 
 def main():
@@ -26,30 +26,68 @@ def main():
         help="Maximum tokens in response (default: 1024)",
     )
     parser.add_argument(
-        "--interactive", "-i", action="store_true", help="Start interactive chat mode"
+        "--interactive", "-i", action="store_true", help="Start interactive chat mode with conversation memory"
+    )
+    parser.add_argument(
+        "--no-memory", action="store_true", help="Disable conversation memory in interactive mode"
     )
 
     args = parser.parse_args()
 
     if args.interactive:
-        # Interactive mode
+        # Interactive mode with conversation memory
+        memory_status = "disabled" if args.no_memory else "enabled"
         print(
-            f"Starting interactive chat with Claude ({args.model}). Type 'exit' or 'quit' to end."
+            f"Starting interactive chat with Claude ({args.model}). Conversation memory: {memory_status}."
         )
-        print("-" * 50)
+        print("Type 'exit', 'quit', or 'bye' to end. Type '/clear' to clear conversation history.")
+        print("-" * 70)
+
+        # Initialize conversation manager if memory is enabled
+        conversation = None if args.no_memory else ConversationManager()
 
         while True:
             try:
                 user_input = input("\nYou: ").strip()
+                
+                # Handle special commands
                 if user_input.lower() in ["exit", "quit", "bye"]:
                     print("Goodbye!")
                     break
+                
+                if user_input.lower() == "/clear":
+                    if conversation:
+                        conversation.clear()
+                        print("Conversation history cleared.")
+                    else:
+                        print("No conversation memory to clear.")
+                    continue
+                
+                if user_input.lower() == "/status":
+                    if conversation:
+                        print(f"Status: {conversation.get_conversation_summary()}")
+                    else:
+                        print("Status: Conversation memory disabled")
+                    continue
 
                 if not user_input:
                     continue
 
                 print("Claude: ", end="")
-                response = chat_with_claude(user_input, args.model, args.max_tokens)
+                
+                if conversation:
+                    # Add user message to conversation history
+                    conversation.add_user_message(user_input)
+                    # Get response with full conversation context
+                    response = chat_with_conversation(
+                        conversation.get_messages(), args.model, args.max_tokens
+                    )
+                    # Add assistant response to conversation history
+                    conversation.add_assistant_message(response)
+                else:
+                    # No memory mode - single message
+                    response = chat_with_claude(user_input, args.model, args.max_tokens)
+                
                 print(response)
 
             except KeyboardInterrupt:

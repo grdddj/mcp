@@ -28,8 +28,11 @@ uv sync
 # Single message
 uv run claude-cli "What's the weather like?"
 
-# Interactive mode  
+# Interactive mode with conversation memory
 uv run claude-cli -i
+
+# Interactive mode without memory (each message independent)
+uv run claude-cli -i --no-memory
 
 # With custom model and token limit
 uv run claude-cli "Hello" --model claude-sonnet-4-20250514 --max-tokens 512
@@ -48,8 +51,26 @@ claude-cli "Hello Claude"
 
 - `--model`: Choose Claude model (overrides ANTHROPIC_MODEL from .env)
 - `--max-tokens`: Maximum tokens in response (default: 1024)
-- `--interactive` / `-i`: Start interactive chat mode
+- `--interactive` / `-i`: Start interactive chat mode with conversation memory
+- `--no-memory`: Disable conversation memory in interactive mode
 - `--help`: Show help message
+
+## Interactive Mode Features
+
+**Conversation Memory (default)**:
+- Claude remembers the entire conversation context
+- Each response builds on previous messages
+- Automatic context window management (keeps last 20 messages)
+
+**Special Commands in Interactive Mode**:
+- `/clear` - Clear conversation history
+- `/status` - Show conversation status
+- `exit`, `quit`, `bye` - Exit the program
+
+**Memory Management**:
+- Automatically trims old messages to stay within context limits
+- Preserves user/assistant message pairs when trimming
+- Use `--no-memory` flag for independent messages (like the old behavior)
 
 ## Environment Variables
 
