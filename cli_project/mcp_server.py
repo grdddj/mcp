@@ -1,6 +1,7 @@
 from pydantic import Field
 from fastmcp import FastMCP
-from mcp.server.fastmcp.prompts import base
+from fastmcp.prompts import Message, PromptMessage
+
 from dotenv import load_dotenv
 import os
 import requests
@@ -94,7 +95,7 @@ def get_doc_contents(doc_id: str) -> str:
 )
 def format_document(
     doc_id: str = Field(description="The ID of the document to format."),
-) -> list[base.Message]:
+) -> list[PromptMessage]:
     prompt = f"""
     You are a helpful assistant that rewrites documents in markdown format.
 
@@ -107,7 +108,7 @@ def format_document(
     Use the 'edit_doc_contents' tool to edit the document.
     After you edit the document, please give be back the new text.
     """
-    return [base.UserMessage(prompt)]
+    return [Message(prompt, role="user")]
 
 
 # TODO: Write a prompt to summarize a doc
@@ -117,7 +118,7 @@ def format_document(
 )
 def summarize_document(
     doc_id: str = Field(description="The ID of the document to summarize."),
-) -> list[base.Message]:
+) -> list[PromptMessage]:
     prompt = f"""
     You are a helpful assistant that summarizes documents in a few sentences.
 
@@ -129,9 +130,9 @@ def summarize_document(
     Use the 'read_doc_contents' tool to read the document.
     After you read the document, please give me back a summary of the document in a few sentences.
     """
-    return [base.UserMessage(prompt)]
+    return [Message(prompt, role="user")]
 
 
 if __name__ == "__main__":
-    # mcp.run(transport="stdio")
-    mcp.run(transport="http", host="127.0.0.1", port=6277, path="/mcp")
+    mcp.run(transport="stdio")
+    # mcp.run(transport="http", host="127.0.0.1", port=6277, path="/mcp")
