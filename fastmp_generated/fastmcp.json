@@ -1,0 +1,18 @@
+{
+  "$schema": "https://gofastmcp.com/schemas/fastmcp_config/v1.json",
+  "entrypoint": {
+    "file": "fastmcp_server.py",
+    "object": "mcp"
+  },
+  "environment": {
+    "dependencies": [
+      "fastmcp>=2.12.0"
+    ]
+  },
+  "deployment": {
+    "transport": "http",
+    "host": "127.0.0.1",
+    "port": 8000,
+    "log_level": "info"
+  }
+}
