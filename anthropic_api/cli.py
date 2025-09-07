@@ -4,7 +4,14 @@ CLI interface for the Claude API tool
 
 import argparse
 import sys
-from claude_api import chat_with_claude, chat_with_conversation, get_default_model, ConversationManager
+from claude_api import (
+    chat_with_claude,
+    chat_with_claude_detailed,
+    chat_with_conversation,
+    chat_with_conversation_detailed,
+    get_default_model,
+    ConversationManager,
+)
 
 
 def main():
@@ -26,10 +33,20 @@ def main():
         help="Maximum tokens in response (default: 1024)",
     )
     parser.add_argument(
-        "--interactive", "-i", action="store_true", help="Start interactive chat mode with conversation memory"
+        "--interactive",
+        "-i",
+        action="store_true",
+        help="Start interactive chat mode with conversation memory",
     )
     parser.add_argument(
-        "--no-memory", action="store_true", help="Disable conversation memory in interactive mode"
+        "--no-memory",
+        action="store_true",
+        help="Disable conversation memory in interactive mode",
+    )
+    parser.add_argument(
+        "--show-tokens",
+        action="store_true",
+        help="Display token usage and cost information",
     )
 
     args = parser.parse_args()
@@ -40,7 +57,13 @@ def main():
         print(
             f"Starting interactive chat with Claude ({args.model}). Conversation memory: {memory_status}."
         )
-        print("Type 'exit', 'quit', or 'bye' to end. Type '/clear' to clear conversation history.")
+        show_tokens_help = " Token usage will be displayed." if args.show_tokens else ""
+        print(
+            f"Type 'exit', 'quit', or 'bye' to end. Type '/clear' to clear conversation history.{show_tokens_help}"
+        )
+        print(
+            "Additional commands: '/status' (conversation info), '/usage' (token usage), '/reset' (reset usage tracking)"
+        )
         print("-" * 70)
 
         # Initialize conversation manager if memory is enabled
@@ -49,12 +72,12 @@ def main():
         while True:
             try:
                 user_input = input("\nYou: ").strip()
-                
+
                 # Handle special commands
                 if user_input.lower() in ["exit", "quit", "bye"]:
                     print("Goodbye!")
                     break
-                
+
                 if user_input.lower() == "/clear":
                     if conversation:
                         conversation.clear()
@@ -62,7 +85,7 @@ def main():
                     else:
                         print("No conversation memory to clear.")
                     continue
-                
+
                 if user_input.lower() == "/status":
                     if conversation:
                         print(f"Status: {conversation.get_conversation_summary()}")
@@ -70,25 +93,75 @@ def main():
                         print("Status: Conversation memory disabled")
                     continue
 
+                if user_input.lower() == "/usage":
+                    if conversation:
+                        print(f"Usage: {conversation.get_usage_summary()}")
+                    else:
+                        print(
+                            "Usage tracking not available without conversation memory"
+                        )
+                    continue
+
+                if user_input.lower() == "/reset":
+                    if conversation:
+                        conversation.reset_usage()
+                        print("Usage tracking reset.")
+                    else:
+                        print("No usage tracking to reset")
+                    continue
+
                 if not user_input:
                     continue
 
                 print("Claude: ", end="")
-                
+
                 if conversation:
                     # Add user message to conversation history
                     conversation.add_user_message(user_input)
                     # Get response with full conversation context
-                    response = chat_with_conversation(
-                        conversation.get_messages(), args.model, args.max_tokens
-                    )
+                    if args.show_tokens:
+                        claude_response = chat_with_conversation_detailed(
+                            conversation.get_messages(), args.model, args.max_tokens
+                        )
+                        response = claude_response.content
+                        conversation.record_usage(claude_response.usage)
+                    else:
+                        response = chat_with_conversation(
+                            conversation.get_messages(), args.model, args.max_tokens
+                        )
                     # Add assistant response to conversation history
                     conversation.add_assistant_message(response)
                 else:
                     # No memory mode - single message
-                    response = chat_with_claude(user_input, args.model, args.max_tokens)
-                
+                    if args.show_tokens:
+                        claude_response = chat_with_claude_detailed(
+                            user_input, args.model, args.max_tokens
+                        )
+                        response = claude_response.content
+                    else:
+                        response = chat_with_claude(
+                            user_input, args.model, args.max_tokens
+                        )
+
                 print(response)
+
+                # Show token usage if requested
+                if args.show_tokens:
+                    if conversation:
+                        # Show current exchange usage
+                        if "claude_response" in locals():
+                            usage = claude_response.usage
+                            print(
+                                f"\n[Tokens: {usage.input_tokens:,} in, {usage.output_tokens:,} out, ${usage.cost_estimate:.4f}]"
+                            )
+                        # Show session total
+                        print(f"[{conversation.get_usage_summary()}]")
+                    else:
+                        if "claude_response" in locals():
+                            usage = claude_response.usage
+                            print(
+                                f"\n[Tokens: {usage.input_tokens:,} in, {usage.output_tokens:,} out, ${usage.cost_estimate:.4f}]"
+                            )
 
             except KeyboardInterrupt:
                 print("\nGoodbye!")
@@ -99,8 +172,18 @@ def main():
 
     elif args.message:
         # Single message mode
-        response = chat_with_claude(args.message, args.model, args.max_tokens)
-        print(response)
+        if args.show_tokens:
+            claude_response = chat_with_claude_detailed(
+                args.message, args.model, args.max_tokens
+            )
+            print(claude_response.content)
+            usage = claude_response.usage
+            print(
+                f"\n[Tokens: {usage.input_tokens:,} in, {usage.output_tokens:,} out, ${usage.cost_estimate:.4f}]"
+            )
+        else:
+            response = chat_with_claude(args.message, args.model, args.max_tokens)
+            print(response)
 
     else:
         # No message provided, read from stdin
@@ -113,8 +196,18 @@ def main():
 
         message = sys.stdin.read().strip()
         if message:
-            response = chat_with_claude(message, args.model, args.max_tokens)
-            print(response)
+            if args.show_tokens:
+                claude_response = chat_with_claude_detailed(
+                    message, args.model, args.max_tokens
+                )
+                print(claude_response.content)
+                usage = claude_response.usage
+                print(
+                    f"\n[Tokens: {usage.input_tokens:,} in, {usage.output_tokens:,} out, ${usage.cost_estimate:.4f}]"
+                )
+            else:
+                response = chat_with_claude(message, args.model, args.max_tokens)
+                print(response)
 
 
 if __name__ == "__main__":

@@ -37,6 +37,9 @@ uv run claude-cli -i --no-memory
 # With custom model and token limit
 uv run claude-cli "Hello" --model claude-sonnet-4-20250514 --max-tokens 512
 
+# Show token usage and costs
+uv run claude-cli "Hello" --show-tokens
+
 # From stdin
 echo "Hello Claude" | uv run claude-cli
 ```
@@ -53,6 +56,7 @@ claude-cli "Hello Claude"
 - `--max-tokens`: Maximum tokens in response (default: 1024)
 - `--interactive` / `-i`: Start interactive chat mode with conversation memory
 - `--no-memory`: Disable conversation memory in interactive mode
+- `--show-tokens`: Display token usage and cost information for each request
 - `--help`: Show help message
 
 ## Interactive Mode Features
@@ -65,12 +69,42 @@ claude-cli "Hello Claude"
 **Special Commands in Interactive Mode**:
 - `/clear` - Clear conversation history
 - `/status` - Show conversation status
+- `/usage` - Show token usage and cost summary
+- `/reset` - Reset usage tracking counters
 - `exit`, `quit`, `bye` - Exit the program
 
 **Memory Management**:
 - Automatically trims old messages to stay within context limits
 - Preserves user/assistant message pairs when trimming
 - Use `--no-memory` flag for independent messages (like the old behavior)
+
+## Token Usage Tracking
+
+**Cost Monitoring**:
+- Track input/output tokens for each API call
+- Model-specific cost calculation (Haiku, Sonnet, Opus pricing)
+- Cumulative session cost tracking in interactive mode
+
+**Usage Examples**:
+```bash
+# Single message with token display
+uv run claude-cli "Explain quantum computing" --show-tokens
+# Output: [Tokens: 15 in, 245 out, $0.0003]
+
+# Interactive mode with usage tracking
+uv run claude-cli -i --show-tokens
+# Shows per-message and session totals
+
+# Check usage in interactive mode
+/usage  # Shows: Session usage: 5 exchanges, 1,234 tokens (890 in, 344 out), $0.0045
+```
+
+**Supported Models & Pricing**:
+https://www.anthropic.com/pricing#api
+https://token-calculator.net/
+- **Claude 3.5 Haiku**: $0.80/$4.00 per 1M tokens (in/out)
+- **Claude 4 Sonnet**: $3.00/$15.00 per 1M tokens (in/out)
+- **Claude 4.1 Opus**: $15.00/$75.00 per 1M tokens (in/out)
 
 ## Environment Variables
 
