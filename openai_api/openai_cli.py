@@ -5,7 +5,7 @@ from openai_client import get_openai_response
 def display_stats(usage, model_name):
     """Display token usage statistics"""
     if usage:
-        print(f"\n📊 Token Usage Stats:")
+        print("\n📊 Token Usage Stats:")
         print(f"   Model: {model_name}")
         print(f"   Input tokens: {usage.prompt_tokens:,}")
         print(f"   Output tokens: {usage.completion_tokens:,}")

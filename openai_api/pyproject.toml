@@ -6,6 +6,7 @@ authors = [{name = "CLI Tool", email = "tool@example.com"}]
 dependencies = [
     "openai>=1.0.0",
     "python-dotenv>=1.0.0",
+    "ruff>=0.12.12",
 ]
 requires-python = ">=3.8"
 
